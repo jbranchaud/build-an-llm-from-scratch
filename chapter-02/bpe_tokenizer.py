@@ -155,7 +155,10 @@ def main():
     except Exception as e:
         print(f"An error occurred: {e}")
 
-    vocab_size = 500
+    # Pick a vocab size:
+    # - 300 is quick
+    # - 500 produces more interesting tokens
+    vocab_size = 300
 
     # Train the corpus
     tokenizer = BPETokenizer()
