@@ -30,11 +30,6 @@ class BPETokenizer:
         return list(text.encode("utf-8"))
 
     @staticmethod
-    def _bytes_to_text(tokens: list[int]) -> str:
-        """Convert a list of tokens to a string"""
-        return bytes(tokens).decode("utf-8")
-
-    @staticmethod
     def _get_pair_counts(token_ids: list[int]) -> Counter:
         """Count how often each adjacent pair appears"""
         counts = Counter()
@@ -56,19 +51,6 @@ class BPETokenizer:
             else:
                 result.append(token_ids[i])
                 i += 1
-        return result
-
-    def unmerge(
-        self, token_ids: list[int], composite_id: int, pair: tuple[int, int]
-    ) -> list[int]:
-        """Replace a token from a merge rule with a pair of tokens"""
-        result = []
-        for i in token_ids:
-            if i == composite_id:
-                result.extend(pair)
-            else:
-                result.append(i)
-
         return result
 
     def train_bpe(self, text: str, vocab_size: int) -> dict:
@@ -126,16 +108,6 @@ class BPETokenizer:
             token_ids = self._merge(token_ids, byte_pair, new_id)
 
         return token_ids
-
-    # I think I overcomplicated this method...
-    # def decode(
-    #     self, token_ids: list[int], merge_rules: list[tuple[tuple[int, int], int]]
-    # ) -> str:
-    #     unmerged_tokens = copy(token_ids)
-    #     for byte_pair, composite_id in reversed(merge_rules):
-    #         unmerged_tokens = unmerge(unmerged_tokens, composite_id, byte_pair)
-    #
-    #     return self.bytes_to_text(unmerged_tokens)
 
     def _decode(self, token_ids: list[int], vocab: dict[int, bytes]) -> str:
         text_as_bytes = b"".join(vocab[id] for id in token_ids)
