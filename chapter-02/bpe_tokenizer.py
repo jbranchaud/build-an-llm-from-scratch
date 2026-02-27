@@ -1,3 +1,4 @@
+import argparse
 from collections import Counter
 from pathlib import Path
 from typing import TypeAlias
@@ -110,28 +111,30 @@ class BPETokenizer:
 
         return token_ids
 
-    def _decode(self, token_ids: list[int], vocab: dict[int, bytes]) -> str:
+    def _decode(self, token_ids: TokenIds, vocab: dict[int, bytes]) -> str:
         text_as_bytes = b"".join(vocab[id] for id in token_ids)
         text = text_as_bytes.decode("utf-8", errors="replace")
         return text
 
 
-def main():
+def main(args):
     # Read in a corpus from some source file
     corpus = ""
-    file_path = Path("~/dev/jbranchaud/til/combined.md").expanduser()
     try:
-        with open(file_path, "r", encoding="utf-8") as file:
+        with args.corpus as file:
             corpus = file.read()
     except FileNotFoundError:
-        print(f"Error: The file '{file_path}' was not found.")
+        # FIXME: we don't ever get here now because argparse ensures the file exists earlier
+        print(f"Error: The file '{args.corpus}' was not found.")
     except Exception as e:
         print(f"An error occurred: {e}")
+
+    DEFAULT_VOCAB_SIZE = 300
 
     # Pick a vocab size:
     # - 300 is quick
     # - 500 produces more interesting tokens
-    vocab_size = 300
+    vocab_size = args.vocab_size or DEFAULT_VOCAB_SIZE
 
     # Train the corpus
     tokenizer = BPETokenizer()
@@ -160,4 +163,27 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(
+        description="produce BPE tokenization of corpus of text"
+    )
+    parser.add_argument(
+        "--corpus",
+        type=argparse.FileType("r"),
+        help="a relative path to a text file",
+        required=True,
+    )
+    parser.add_argument(
+        "--output",
+        type=argparse.FileType("w"),
+        help="a relative path to output BPE representation",
+        required=True,
+    )
+    parser.add_argument(
+        "--vocab-size",
+        type=int,
+        help="Override default vocab size of 300, must be greater than 256",
+        required=False,
+    )
+    args = parser.parse_args()
+
+    main(args)
