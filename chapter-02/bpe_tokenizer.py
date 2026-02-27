@@ -4,6 +4,7 @@ from typing import TypeAlias
 
 MergeRule: TypeAlias = tuple[tuple[int, int], int]
 MergeRules: TypeAlias = list[MergeRule]
+TokenIds: TypeAlias = list[int]
 
 
 class BPETokenizer:
@@ -19,7 +20,7 @@ class BPETokenizer:
     def encode(self, text: str) -> list[int]:
         return self._encode(text, self.merge_rules)
 
-    def decode(self, token_ids: list[int]) -> str:
+    def decode(self, token_ids: TokenIds) -> str:
         return self._decode(token_ids, self.vocab)
 
     BASE_VOCAB_SIZE = 256
@@ -30,7 +31,7 @@ class BPETokenizer:
         return list(text.encode("utf-8"))
 
     @staticmethod
-    def _get_pair_counts(token_ids: list[int]) -> Counter:
+    def _get_pair_counts(token_ids: TokenIds) -> Counter:
         """Count how often each adjacent pair appears"""
         counts = Counter()
         for i in range(len(token_ids) - 1):
@@ -39,7 +40,7 @@ class BPETokenizer:
         return counts
 
     @staticmethod
-    def _merge(token_ids: list[int], pair: tuple[int, int], new_id: int) -> list[int]:
+    def _merge(token_ids: TokenIds, pair: tuple[int, int], new_id: int) -> list[int]:
         """Replace all occurrences of `pair` in `token_ids` with `new_id`"""
         result = []
         i = 0
@@ -101,7 +102,7 @@ class BPETokenizer:
 
         return {"merge_rules": merge_rules, "vocab": vocab}
 
-    def _encode(self, text: str, merge_rules: MergeRules) -> list[int]:
+    def _encode(self, text: str, merge_rules: MergeRules) -> TokenIds:
         """Encode a string into token IDs using trained merge rules"""
         token_ids = self._text_to_bytes(text)
         for byte_pair, new_id in merge_rules:
