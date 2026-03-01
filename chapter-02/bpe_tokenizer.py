@@ -1,15 +1,17 @@
 import argparse
 from collections import Counter
-from pathlib import Path
+import collections
 from typing import TypeAlias
+from typing import NewType
 
-MergeRule: TypeAlias = tuple[tuple[int, int], int]
+BytePair = collections.namedtuple('BytePair', ['one', 'two'])
+
+MergeRule: TypeAlias = tuple[BytePair, int]
 MergeRules: TypeAlias = list[MergeRule]
-TokenIds: TypeAlias = list[int]
-
+TokenIds = NewType("TokenIds", list[int])
 
 class BPETokenizer:
-    def __init__(self):
+    def __init__(self) -> None:
         self.merge_rules: MergeRules = []
         self.vocab: dict[int, bytes] = {}
 
@@ -27,33 +29,33 @@ class BPETokenizer:
     BASE_VOCAB_SIZE = 256
 
     @staticmethod
-    def _text_to_bytes(text: str) -> list[int]:
+    def _text_to_bytes(text: str) -> TokenIds:
         """Convert a string to a list of byte values (0-255)"""
-        return list(text.encode("utf-8"))
+        return TokenIds(list(text.encode("utf-8")))
 
     @staticmethod
     def _get_pair_counts(token_ids: TokenIds) -> Counter:
         """Count how often each adjacent pair appears"""
-        counts = Counter()
+        counts = Counter[BytePair]()
         for i in range(len(token_ids) - 1):
-            pair = (token_ids[i], token_ids[i + 1])
+            pair = BytePair(token_ids[i], token_ids[i + 1])
             counts[pair] += 1
         return counts
 
     @staticmethod
-    def _merge(token_ids: TokenIds, pair: tuple[int, int], new_id: int) -> list[int]:
+    def _merge(token_ids: TokenIds, pair: BytePair, new_id: int) -> TokenIds:
         """Replace all occurrences of `pair` in `token_ids` with `new_id`"""
         result = []
         i = 0
         while i < len(token_ids):
             # Check if this position matches the pair
-            if i < len(token_ids) - 1 and (token_ids[i], token_ids[i + 1]) == pair:
+            if i < len(token_ids) - 1 and token_ids[i] == pair.one and token_ids[i + 1] == pair.two:
                 result.append(new_id)
                 i += 2
             else:
                 result.append(token_ids[i])
                 i += 1
-        return result
+        return TokenIds(result)
 
     def train_bpe(self, text: str, vocab_size: int) -> dict:
         """
@@ -84,7 +86,7 @@ class BPETokenizer:
             counts = self._get_pair_counts(token_ids)
 
             # Pick most frequent pair
-            next_pair = counts.most_common(1)[0][0]
+            next_pair: BytePair = counts.most_common(1)[0][0]
             new_id = self.BASE_VOCAB_SIZE + i
 
             token_ids = self._merge(token_ids, next_pair, new_id)
@@ -98,7 +100,7 @@ class BPETokenizer:
         # Build vocabulary: base encoding + multi-byte phrases
         vocab = {i: bytes([i]) for i in range(self.BASE_VOCAB_SIZE)}
         for (pair_a, pair_b), new_id in merge_rules:
-            print(f"vocab: {new_id} -> {vocab[pair_a]} + {vocab[pair_b]}")
+            print(f"vocab: {new_id} -> {vocab[pair_a]!r} + {vocab[pair_b]!r}")
             vocab[new_id] = vocab[pair_a] + vocab[pair_b]
 
         return {"merge_rules": merge_rules, "vocab": vocab}
