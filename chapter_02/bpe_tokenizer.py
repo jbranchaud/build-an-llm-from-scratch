@@ -1,22 +1,23 @@
 import argparse
 from collections import Counter
-import collections
 from typing import TypeAlias
 from typing import NewType
 
-BytePair = collections.namedtuple('BytePair', ['one', 'two'])
+# BytePair = collections.namedtuple('BytePair', ['one', 'two'])
+ByteSequence = NewType("ByteSequence", list[int])
 
-MergeRule: TypeAlias = tuple[BytePair, int]
+MergeRule: TypeAlias = tuple[ByteSequence, int]
 MergeRules: TypeAlias = list[MergeRule]
 TokenIds = NewType("TokenIds", list[int])
+
 
 class BPETokenizer:
     def __init__(self) -> None:
         self.merge_rules: MergeRules = []
         self.vocab: dict[int, bytes] = {}
 
-    def train(self, text: str, vocab_size: int) -> None:
-        result = self.train_bpe(text, vocab_size)
+    def train(self, text: str, vocab_size: int, special_tokens: list[str]) -> None:
+        result = self.train_bpe(text, vocab_size, special_tokens)
         self.merge_rules = result["merge_rules"]
         self.vocab = result["vocab"]
 
@@ -36,28 +37,38 @@ class BPETokenizer:
     @staticmethod
     def _get_pair_counts(token_ids: TokenIds) -> Counter:
         """Count how often each adjacent pair appears"""
-        counts = Counter[BytePair]()
+        counts = Counter[ByteSequence]()
         for i in range(len(token_ids) - 1):
-            pair = BytePair(token_ids[i], token_ids[i + 1])
+            pair = ByteSequence([token_ids[i], token_ids[i + 1]])
             counts[pair] += 1
         return counts
 
     @staticmethod
-    def _merge(token_ids: TokenIds, pair: BytePair, new_id: int) -> TokenIds:
+    def _merge(token_ids: TokenIds, sequence: ByteSequence, new_id: int) -> TokenIds:
         """Replace all occurrences of `pair` in `token_ids` with `new_id`"""
         result = []
         i = 0
         while i < len(token_ids):
             # Check if this position matches the pair
-            if i < len(token_ids) - 1 and token_ids[i] == pair.one and token_ids[i + 1] == pair.two:
+            room_remaining = i < len(token_ids) - (len(sequence) - 1)
+            if room_remaining and BPETokenizer._subsequence_at_index(
+                token_ids, sequence, i
+            ):
                 result.append(new_id)
-                i += 2
+                i += len(sequence)
             else:
                 result.append(token_ids[i])
                 i += 1
         return TokenIds(result)
 
-    def train_bpe(self, text: str, vocab_size: int) -> dict:
+    @staticmethod
+    def _subsequence_at_index(
+        token_ids: TokenIds, sequence: ByteSequence, index: int
+    ) -> bool:
+        """Check if the sequence appears in token_ids starting at index"""
+        return token_ids[index : (index + len(sequence))] == sequence
+
+    def train_bpe(self, text: str, vocab_size: int, special_tokens: list[str]) -> dict:
         """
         Train a BPE tokenizer
         """
@@ -82,11 +93,15 @@ class BPETokenizer:
         # 2. New byte ID to replace pair
         merge_rules: MergeRules = []
 
+        # First, apply special tokens to `token_ids` and `merge_rules`
+        for special_token in special_tokens:
+            base_tokens_for_special_token = self._text_to_bytes(special_token)
+
         for i in range(num_merges):
             counts = self._get_pair_counts(token_ids)
 
             # Pick most frequent pair
-            next_pair: BytePair = counts.most_common(1)[0][0]
+            next_pair: ByteSequence = "what"  # counts.most_common(1)[0][0]
             new_id = self.BASE_VOCAB_SIZE + i
 
             token_ids = self._merge(token_ids, next_pair, new_id)
@@ -131,16 +146,24 @@ def main(args):
     except Exception as e:
         print(f"An error occurred: {e}")
 
+    special_tokens = args.special_tokens or []
+    for token in special_tokens:
+        print(f"Adding special token: {token}")
+
+    # TODO: remove this once special tokens are implemented
+    if len(special_tokens) > 0:
+        raise ValueError("Special tokens are not supported yet")
+
     DEFAULT_VOCAB_SIZE = 300
 
     # Pick a vocab size:
     # - 300 is quick
     # - 500 produces more interesting tokens
-    vocab_size = args.vocab_size or DEFAULT_VOCAB_SIZE
+    vocab_size = (args.vocab_size or DEFAULT_VOCAB_SIZE) + len(special_tokens)
 
     # Train the corpus
     tokenizer = BPETokenizer()
-    tokenizer.train(corpus, vocab_size)
+    tokenizer.train(corpus, vocab_size, special_tokens)
     vocab = tokenizer.vocab
 
     # Encode something
@@ -184,6 +207,14 @@ if __name__ == "__main__":
         "--vocab-size",
         type=int,
         help="Override default vocab size of 300, must be greater than 256",
+        required=False,
+    )
+    parser.add_argument(
+        "--special-tokens",
+        action="extend",
+        type=str,
+        nargs="+",
+        help="List of special tokens to add to the vocab",
         required=False,
     )
     args = parser.parse_args()
