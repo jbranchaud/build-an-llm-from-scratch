@@ -1,5 +1,13 @@
 from chapter_02.bpe_tokenizer import BPETokenizer
+import pytest
 
+def test_train_bpe_with_invalid_vocab_size():
+    tokenizer = BPETokenizer()
+
+    with pytest.raises(AssertionError) as exception:
+        tokenizer.train_bpe("This is the corpus", 22, [])
+
+    assert "target vocab size must be greater than" in str(exception.value)
 
 def test_merge_with_byte_pair():
     merged_tokens = BPETokenizer._merge([1, 2, 3, 4, 5, 2, 3, 1], [2, 3], 256)

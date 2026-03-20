@@ -101,7 +101,7 @@ class BPETokenizer:
             counts = self._get_pair_counts(token_ids)
 
             # Pick most frequent pair
-            next_pair: ByteSequence = "what"  # counts.most_common(1)[0][0]
+            next_pair: ByteSequence = counts.most_common(1)[0][0]
             new_id = self.BASE_VOCAB_SIZE + i
 
             token_ids = self._merge(token_ids, next_pair, new_id)
