@@ -1,9 +1,8 @@
 import argparse
 from collections import Counter
-from typing import TypeAlias
+from typing import Iterable, TypeAlias
 from typing import NewType
 
-# BytePair = collections.namedtuple('BytePair', ['one', 'two'])
 ByteSequence = NewType("ByteSequence", tuple[int, ...])
 
 MergeRule: TypeAlias = tuple[ByteSequence, int]
@@ -33,6 +32,10 @@ class BPETokenizer:
     def _text_to_bytes(text: str) -> TokenIds:
         """Convert a string to a list of byte values (0-255)"""
         return TokenIds(list(text.encode("utf-8")))
+
+    @staticmethod
+    def _join_bytes(bytes: Iterable[bytes]) -> bytes:
+        return b"".join(bytes)
 
     @staticmethod
     def _get_pair_counts(token_ids: TokenIds) -> Counter:
@@ -114,9 +117,11 @@ class BPETokenizer:
 
         # Build vocabulary: base encoding + multi-byte phrases
         vocab = {i: bytes([i]) for i in range(self.BASE_VOCAB_SIZE)}
-        for (pair_a, pair_b), new_id in merge_rules:
-            print(f"vocab: {new_id} -> {vocab[pair_a]!r} + {vocab[pair_b]!r}")
-            vocab[new_id] = vocab[pair_a] + vocab[pair_b]
+        for sequence_ids, new_id in merge_rules:
+            byte_seq = [vocab[id] for id in sequence_ids]
+            bytes_for_print = [f"{byte!r}" for byte in byte_seq]
+            print(f"vocab: {new_id} -> {" + ".join(bytes_for_print)}")
+            vocab[new_id] = BPETokenizer._join_bytes(byte_seq)
 
         return {"merge_rules": merge_rules, "vocab": vocab}
 
@@ -129,7 +134,7 @@ class BPETokenizer:
         return token_ids
 
     def _decode(self, token_ids: TokenIds, vocab: dict[int, bytes]) -> str:
-        text_as_bytes = b"".join(vocab[id] for id in token_ids)
+        text_as_bytes = BPETokenizer._join_bytes(vocab[id] for id in token_ids)
         text = text_as_bytes.decode("utf-8", errors="replace")
         return text
 

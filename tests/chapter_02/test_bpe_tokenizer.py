@@ -12,10 +12,20 @@ def test_train_bpe():
     tokenizer = BPETokenizer()
 
     text = get_test_corpus()
-    bpe = tokenizer.train_bpe(text, 270, [])
+    bpe = tokenizer.train_bpe(text, BPETokenizer.BASE_VOCAB_SIZE + 1, [])
 
     assert "merge_rules" in bpe
     assert "vocab" in bpe
+
+    last_merge_rule = bpe['merge_rules'][-1]
+    assert last_merge_rule[0] == (32, 97)
+    assert last_merge_rule[1] == 256
+
+    vocab = bpe["vocab"]
+    assert vocab[last_merge_rule[0][0]] == b' '
+    assert vocab[last_merge_rule[0][1]] == b'a'
+
+
 
 def test_train_bpe_with_invalid_vocab_size():
     tokenizer = BPETokenizer()
