@@ -1,6 +1,22 @@
 from chapter_02.bpe_tokenizer import BPETokenizer
 import pytest
 
+def get_test_corpus():
+    return """
+    I'm a very routine-oriented person, so having this habit of writing TILs has been very anchoring for me. Like any software career I've experienced the ebbs and flows of energy and excitement around both paid work and side-projects. Even when a work project was in a bit of a doldrum or there were challenging team dynamics, I was always able put on a learning mindset. At the end of my day I could look through my notes, see some of the interesting things that had caught my eye, dig in a bit further, and then write a TIL.
+
+    When I first started writing TILs, I was working at a small Ruby on Rails consultancy. I was surrounded by the smartest and kindest software devs I've ever had the privilege to work with. It was intimidating. I was learning a ton every day to the point of overwhelm and yet also felt constantly like I didn't know enough. Writing TILs was as much a way to convince myself that I was steadily improving as anything else.
+    """
+
+def test_train_bpe():
+    tokenizer = BPETokenizer()
+
+    text = get_test_corpus()
+    bpe = tokenizer.train_bpe(text, 270, [])
+
+    assert "merge_rules" in bpe
+    assert "vocab" in bpe
+
 def test_train_bpe_with_invalid_vocab_size():
     tokenizer = BPETokenizer()
 

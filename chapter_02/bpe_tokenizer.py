@@ -4,7 +4,7 @@ from typing import TypeAlias
 from typing import NewType
 
 # BytePair = collections.namedtuple('BytePair', ['one', 'two'])
-ByteSequence = NewType("ByteSequence", list[int])
+ByteSequence = NewType("ByteSequence", tuple[int, ...])
 
 MergeRule: TypeAlias = tuple[ByteSequence, int]
 MergeRules: TypeAlias = list[MergeRule]
@@ -39,7 +39,7 @@ class BPETokenizer:
         """Count how often each adjacent pair appears"""
         counts = Counter[ByteSequence]()
         for i in range(len(token_ids) - 1):
-            pair = ByteSequence([token_ids[i], token_ids[i + 1]])
+            pair = ByteSequence((token_ids[i], token_ids[i + 1]))
             counts[pair] += 1
         return counts
 
@@ -100,16 +100,16 @@ class BPETokenizer:
         for i in range(num_merges):
             counts = self._get_pair_counts(token_ids)
 
-            # Pick most frequent pair
-            next_pair: ByteSequence = counts.most_common(1)[0][0]
+            # Pick most frequent sequence
+            next_sequence: ByteSequence = counts.most_common(1)[0][0]
             new_id = self.BASE_VOCAB_SIZE + i
 
-            token_ids = self._merge(token_ids, next_pair, new_id)
-            merge_rules.append((next_pair, new_id))
+            token_ids = self._merge(token_ids, next_sequence, new_id)
+            merge_rules.append((next_sequence, new_id))
 
             if (i + 1) % 50 == 0 or i < 5:
                 print(
-                    f"Merge {i+1}/{num_merges}: {next_pair} -> {new_id} (count: {counts[next_pair]})"
+                    f"Merge {i+1}/{num_merges}: {next_sequence} -> {new_id} (count: {counts[next_sequence]})"
                 )
 
         # Build vocabulary: base encoding + multi-byte phrases
