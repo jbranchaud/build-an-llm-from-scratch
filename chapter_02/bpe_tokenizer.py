@@ -100,6 +100,10 @@ class BPETokenizer:
         for special_token in special_tokens:
             base_tokens_for_special_token = self._text_to_bytes(special_token)
 
+            # TODO: follow template of following section going through
+            # `token_ids` and replacing the special token sequence with
+            # a `new_id` and then also adding that rule to `merge_rules`.
+
         for i in range(num_merges):
             counts = self._get_pair_counts(token_ids)
 
