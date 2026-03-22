@@ -2,7 +2,7 @@ import argparse
 from collections import Counter
 from dataclasses import dataclass
 from typing import Iterable, TypeAlias
-from typing import NewType
+from typing import NewType, ClassVar
 
 ByteSequence = NewType("ByteSequence", tuple[int, ...])
 
@@ -13,7 +13,7 @@ Vocab: TypeAlias = dict[int, bytes]
 
 @dataclass
 class BPEConfig:
-    BASE_VOCAB_SIZE = 256
+    BASE_VOCAB_SIZE: ClassVar[int] = 256
 
     vocab_size: int
     special_tokens: list[str]
