@@ -1,4 +1,5 @@
-from chapter_02.bpe_tokenizer import BPETokenizer
+from contextlib import suppress
+from chapter_02.bpe_tokenizer import BPETokenizer, BPEConfig
 import pytest
 
 def get_test_corpus():
@@ -9,11 +10,12 @@ def get_test_corpus():
     """
 
 def test_train_bpe():
-    tokenizer = BPETokenizer()
+    extra_vocab_size = 3
+    config = BPEConfig(BPETokenizer.BASE_VOCAB_SIZE + extra_vocab_size, [])
+    tokenizer = BPETokenizer(config)
 
     text = get_test_corpus()
-    extra_vocab_size = 3
-    bpe = tokenizer.train_bpe(text, BPETokenizer.BASE_VOCAB_SIZE + extra_vocab_size, [])
+    bpe = tokenizer.train_bpe(text)
 
     assert len(bpe.merge_rules) == extra_vocab_size
 
@@ -32,13 +34,11 @@ def test_train_bpe():
         assert expected['vocab_entries'] == actual_vocab_entries
 
 
-def test_train_bpe_with_invalid_vocab_size():
-    tokenizer = BPETokenizer()
+def test_bpe_config_with_invalid_vocab_size():
+    with pytest.raises(ValueError) as exception:
+        BPEConfig(22, [])
 
-    with pytest.raises(AssertionError) as exception:
-        tokenizer.train_bpe("This is the corpus", 22, [])
-
-    assert "target vocab size must be greater than" in str(exception.value)
+    assert "vocab_size (22) must be greater than" in str(exception.value)
 
 
 def test_merge_with_byte_pair():

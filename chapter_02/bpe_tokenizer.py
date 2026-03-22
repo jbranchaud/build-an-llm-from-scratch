@@ -12,18 +12,30 @@ TokenIds = NewType("TokenIds", list[int])
 Vocab: TypeAlias = dict[int, bytes]
 
 @dataclass
+class BPEConfig:
+    vocab_size: int
+    special_tokens: list[str]
+
+    def __post_init__(self):
+        if self.vocab_size < BPETokenizer.BASE_VOCAB_SIZE:
+            msg = f"vocab_size ({self.vocab_size}) must be greater than or equal to BASE_VOCAB_SIZE ({BPETokenizer.BASE_VOCAB_SIZE})"
+            raise ValueError(msg)
+
+
+@dataclass
 class TrainResult:
     merge_rules: MergeRules
     vocab: Vocab
 
 
 class BPETokenizer:
-    def __init__(self) -> None:
+    def __init__(self, config: BPEConfig) -> None:
         self.merge_rules: MergeRules = []
         self.vocab: Vocab = {}
+        self.config: BPEConfig = config
 
-    def train(self, text: str, vocab_size: int, special_tokens: list[str]) -> None:
-        result = self.train_bpe(text, vocab_size, special_tokens)
+    def train(self, text: str) -> None:
+        result = self.train_bpe(text)
         self.merge_rules = result.merge_rules
         self.vocab = result.vocab
 
@@ -82,12 +94,12 @@ class BPETokenizer:
 
         return True
 
-    def train_bpe(self, text: str, vocab_size: int, special_tokens: list[str]) -> TrainResult:
+    def train_bpe(self, text: str) -> TrainResult:
         """
         Train a BPE tokenizer
         """
-        msg = f"Base vocab size is {self.BASE_VOCAB_SIZE}, so target vocab size must be greater than {self.BASE_VOCAB_SIZE}"
-        assert vocab_size > self.BASE_VOCAB_SIZE, msg
+        msg = f"Target vocab_size ({self.config.vocab_size}) must be greater than BASE_VOCAB_SIZE ({self.BASE_VOCAB_SIZE})"
+        assert self.config.vocab_size > self.BASE_VOCAB_SIZE, msg
 
         # TODO: Is there a way to separate out the "Corpus to Pair Counts"
         # processing so that it can be done separately over a series of
@@ -95,7 +107,7 @@ class BPETokenizer:
         # input for the second phase of training the BPE.
 
         token_ids = self._text_to_bytes(text)
-        num_merges = vocab_size - 256
+        num_merges = self.config.vocab_size - 256
 
         # Ordered list of merge rules
         # We want to know what order the rules were "discovered" in so that we
@@ -108,7 +120,7 @@ class BPETokenizer:
         merge_rules: MergeRules = []
 
         # First, apply special tokens to `token_ids` and `merge_rules`
-        for special_token in special_tokens:
+        for special_token in self.config.special_tokens:
             base_tokens_for_special_token = self._text_to_bytes(special_token)
 
             # TODO: follow template of following section going through
@@ -182,8 +194,9 @@ def main(args):
     vocab_size = (args.vocab_size or DEFAULT_VOCAB_SIZE) + len(special_tokens)
 
     # Train the corpus
-    tokenizer = BPETokenizer()
-    tokenizer.train(corpus, vocab_size, special_tokens)
+    config = BPEConfig(vocab_size, special_tokens)
+    tokenizer = BPETokenizer(config)
+    tokenizer.train(corpus)
     vocab = tokenizer.vocab
 
     # Encode something
