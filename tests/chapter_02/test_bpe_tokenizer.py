@@ -15,13 +15,7 @@ def test_train_bpe():
     extra_vocab_size = 3
     bpe = tokenizer.train_bpe(text, BPETokenizer.BASE_VOCAB_SIZE + extra_vocab_size, [])
 
-    assert "merge_rules" in bpe
-    assert "vocab" in bpe
-
-    merge_rules = bpe['merge_rules']
-    assert len(merge_rules) == extra_vocab_size
-
-    vocab = bpe["vocab"]
+    assert len(bpe.merge_rules) == extra_vocab_size
 
     expected_merge_rules = [
         { 'sequence': (32, 97), 'new_id': 256, 'vocab_entries': (b' ', b'a') },
@@ -29,12 +23,12 @@ def test_train_bpe():
         { 'sequence': (32, 119) , 'new_id': 258, 'vocab_entries': (b' ', b'w') }
     ]
 
-    for i, merge_rule in enumerate(merge_rules):
+    for i, merge_rule in enumerate(bpe.merge_rules):
         expected = expected_merge_rules[i]
 
         assert expected['sequence'] == merge_rule[0]
         assert expected['new_id'] == merge_rule[1]
-        actual_vocab_entries = tuple([vocab[id] for id in merge_rule[0]])
+        actual_vocab_entries = tuple([bpe.vocab[id] for id in merge_rule[0]])
         assert expected['vocab_entries'] == actual_vocab_entries
 
 

@@ -1,5 +1,6 @@
 import argparse
 from collections import Counter
+from dataclasses import dataclass
 from typing import Iterable, TypeAlias
 from typing import NewType
 
@@ -8,17 +9,23 @@ ByteSequence = NewType("ByteSequence", tuple[int, ...])
 MergeRule: TypeAlias = tuple[ByteSequence, int]
 MergeRules: TypeAlias = list[MergeRule]
 TokenIds = NewType("TokenIds", list[int])
+Vocab: TypeAlias = dict[int, bytes]
+
+@dataclass
+class TrainResult:
+    merge_rules: MergeRules
+    vocab: Vocab
 
 
 class BPETokenizer:
     def __init__(self) -> None:
         self.merge_rules: MergeRules = []
-        self.vocab: dict[int, bytes] = {}
+        self.vocab: Vocab = {}
 
     def train(self, text: str, vocab_size: int, special_tokens: list[str]) -> None:
         result = self.train_bpe(text, vocab_size, special_tokens)
-        self.merge_rules = result["merge_rules"]
-        self.vocab = result["vocab"]
+        self.merge_rules = result.merge_rules
+        self.vocab = result.vocab
 
     def encode(self, text: str) -> list[int]:
         return self._encode(text, self.merge_rules)
@@ -75,7 +82,7 @@ class BPETokenizer:
 
         return True
 
-    def train_bpe(self, text: str, vocab_size: int, special_tokens: list[str]) -> dict:
+    def train_bpe(self, text: str, vocab_size: int, special_tokens: list[str]) -> TrainResult:
         """
         Train a BPE tokenizer
         """
@@ -131,7 +138,7 @@ class BPETokenizer:
             print(f"vocab: {new_id} -> {" + ".join(bytes_for_print)}")
             vocab[new_id] = BPETokenizer._join_bytes(byte_seq)
 
-        return {"merge_rules": merge_rules, "vocab": vocab}
+        return TrainResult(merge_rules, vocab)
 
     def _encode(self, text: str, merge_rules: MergeRules) -> TokenIds:
         """Encode a string into token IDs using trained merge rules"""
