@@ -107,7 +107,6 @@ class BPETokenizer:
         # input for the second phase of training the BPE.
 
         token_ids = self._text_to_bytes(text)
-        num_merges = self.config.vocab_size - 256
 
         # Ordered list of merge rules
         # We want to know what order the rules were "discovered" in so that we
@@ -119,28 +118,39 @@ class BPETokenizer:
         # 2. New byte ID to replace pair
         merge_rules: MergeRules = []
 
-        # First, apply special tokens to `token_ids` and `merge_rules`
-        for special_token in self.config.special_tokens:
-            base_tokens_for_special_token = self._text_to_bytes(special_token)
+        next_token_id = BPEConfig.BASE_VOCAB_SIZE
 
-            # TODO: follow template of following section going through
-            # `token_ids` and replacing the special token sequence with
-            # a `new_id` and then also adding that rule to `merge_rules`.
+        # First, apply special tokens to `token_ids` and `merge_rules`
+        for i, special_token in enumerate(self.config.special_tokens):
+            # TODO: Maybe `_text_to_bytes` returns a tuple in the first place
+            base_tokens_for_special_token = ByteSequence(tuple(self._text_to_bytes(special_token)))
+
+            token_ids = self._merge(token_ids, base_tokens_for_special_token, next_token_id)
+            merge_rules.append((base_tokens_for_special_token, next_token_id))
+
+            print(
+                f"Merge {i+1}/{len(self.config.special_tokens)}: {base_tokens_for_special_token} -> {next_token_id} (special token)"
+            )
+
+            next_token_id += 1
+
+        num_merges = self.config.vocab_size - BPEConfig.BASE_VOCAB_SIZE - len(self.config.special_tokens)
 
         for i in range(num_merges):
             counts = self._get_pair_counts(token_ids)
 
             # Pick most frequent sequence
             next_sequence: ByteSequence = counts.most_common(1)[0][0]
-            new_id = BPEConfig.BASE_VOCAB_SIZE + i
 
-            token_ids = self._merge(token_ids, next_sequence, new_id)
-            merge_rules.append((next_sequence, new_id))
+            token_ids = self._merge(token_ids, next_sequence, next_token_id)
+            merge_rules.append((next_sequence, next_token_id))
 
             if (i + 1) % 50 == 0 or i < 5:
                 print(
-                    f"Merge {i+1}/{num_merges}: {next_sequence} -> {new_id} (count: {counts[next_sequence]})"
+                    f"Merge {i+1}/{num_merges}: {next_sequence} -> {next_token_id} (count: {counts[next_sequence]})"
                 )
+
+            next_token_id += 1
 
         # Build vocabulary: base encoding + multi-byte phrases
         vocab = {i: bytes([i]) for i in range(BPEConfig.BASE_VOCAB_SIZE)}

@@ -34,6 +34,39 @@ def test_train_bpe():
         assert expected['vocab_entries'] == actual_vocab_entries
 
 
+# TODO: Might need the vocab size validation to account for BASE_VOCAB_SIZE + special_tokens
+# It wouldn't make sense to have 10 special tokens, but an additional vocab size of only 5.
+
+def test_train_bpe_with_special_token():
+    extra_vocab_size = 3
+    special_tokens = ['<|endoftext|>']
+    config = BPEConfig(BPEConfig.BASE_VOCAB_SIZE + extra_vocab_size, special_tokens)
+    tokenizer = BPETokenizer(config)
+
+    text = get_test_corpus()
+    bpe = tokenizer.train_bpe(text)
+
+    assert len(bpe.merge_rules) == extra_vocab_size
+
+    # special_token_seq = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13)
+    special_token_seq = (60, 124, 101, 110, 100, 111, 102, 116, 101, 120, 116, 124, 62)
+    special_token_bytes = (b'<', b'|', b'e', b'n', b'd', b'o', b'f', b't', b'e', b'x', b't', b'|', b'>')
+
+    expected_merge_rules = [
+        { 'sequence': special_token_seq, 'new_id': 256, 'vocab_entries': special_token_bytes },
+        { 'sequence': (32, 97), 'new_id': 257, 'vocab_entries': (b' ', b'a') },
+        { 'sequence': (105, 110) , 'new_id': 258, 'vocab_entries': (b'i', b'n') }
+    ]
+
+    for i, merge_rule in enumerate(bpe.merge_rules):
+        expected = expected_merge_rules[i]
+
+        assert expected['sequence'] == merge_rule[0]
+        assert expected['new_id'] == merge_rule[1]
+        actual_vocab_entries = tuple([bpe.vocab[id] for id in merge_rule[0]])
+        assert expected['vocab_entries'] == actual_vocab_entries
+
+
 def test_bpe_config_with_invalid_vocab_size():
     with pytest.raises(ValueError) as exception:
         BPEConfig(22, [])
