@@ -21,14 +21,19 @@ def test_train_bpe():
     merge_rules = bpe['merge_rules']
     assert len(merge_rules) == extra_vocab_size
 
-    merge_rule = merge_rules[0]
-    assert merge_rule[0] == (32, 97)
-    assert merge_rule[1] == 256
-
     vocab = bpe["vocab"]
-    assert vocab[merge_rule[0][0]] == b' '
-    assert vocab[merge_rule[0][1]] == b'a'
 
+    expected_merge_rules = [
+        { 'sequence': (32, 97), 'new_id': 256, 'vocab_entries': (b' ', b'a') }
+    ]
+
+    for i, merge_rule in enumerate(merge_rules):
+        expected = expected_merge_rules[i]
+
+        assert expected['sequence'] == merge_rule[0]
+        assert expected['new_id'] == merge_rule[1]
+        actual_vocab_entries = tuple([vocab[id] for id in merge_rule[0]])
+        assert expected['vocab_entries'] == actual_vocab_entries
 
 
 def test_train_bpe_with_invalid_vocab_size():
