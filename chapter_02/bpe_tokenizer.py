@@ -200,7 +200,7 @@ def main(args):
     vocab = tokenizer.vocab
 
     # Encode something
-    test_text = "One of my favorite features that many REPLs offer is an `edit` (Ruby's IRB) or `\edit` (Postgres' psql) command that pops you into your default editor (nvim for me) where you can prepare your statement (or multiple statements!) without worrying about hitting `<enter>` too soon."
+    test_text = r"One of my favorite features that many REPLs offer is an `edit` (Ruby's IRB) or `\edit` (Postgres' psql) command that pops you into your default editor (nvim for me) where you can prepare your statement (or multiple statements!) without worrying about hitting `<enter>` too soon."
     token_ids = tokenizer.encode(test_text)
     print(f"\nEncoded '{test_text}': {token_ids}")
     print(
