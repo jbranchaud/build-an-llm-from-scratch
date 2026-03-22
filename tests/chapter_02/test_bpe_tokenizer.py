@@ -11,7 +11,7 @@ def get_test_corpus():
 
 def test_train_bpe():
     extra_vocab_size = 3
-    config = BPEConfig(BPETokenizer.BASE_VOCAB_SIZE + extra_vocab_size, [])
+    config = BPEConfig(BPEConfig.BASE_VOCAB_SIZE + extra_vocab_size, [])
     tokenizer = BPETokenizer(config)
 
     text = get_test_corpus()

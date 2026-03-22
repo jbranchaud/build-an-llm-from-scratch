@@ -13,12 +13,14 @@ Vocab: TypeAlias = dict[int, bytes]
 
 @dataclass
 class BPEConfig:
+    BASE_VOCAB_SIZE = 256
+
     vocab_size: int
     special_tokens: list[str]
 
     def __post_init__(self):
-        if self.vocab_size < BPETokenizer.BASE_VOCAB_SIZE:
-            msg = f"vocab_size ({self.vocab_size}) must be greater than or equal to BASE_VOCAB_SIZE ({BPETokenizer.BASE_VOCAB_SIZE})"
+        if self.vocab_size < self.BASE_VOCAB_SIZE:
+            msg = f"vocab_size ({self.vocab_size}) must be greater than or equal to BASE_VOCAB_SIZE ({self.BASE_VOCAB_SIZE})"
             raise ValueError(msg)
 
 
@@ -44,8 +46,6 @@ class BPETokenizer:
 
     def decode(self, token_ids: TokenIds) -> str:
         return self._decode(token_ids, self.vocab)
-
-    BASE_VOCAB_SIZE = 256
 
     @staticmethod
     def _text_to_bytes(text: str) -> TokenIds:
@@ -98,8 +98,8 @@ class BPETokenizer:
         """
         Train a BPE tokenizer
         """
-        msg = f"Target vocab_size ({self.config.vocab_size}) must be greater than BASE_VOCAB_SIZE ({self.BASE_VOCAB_SIZE})"
-        assert self.config.vocab_size > self.BASE_VOCAB_SIZE, msg
+        msg = f"Target vocab_size ({self.config.vocab_size}) must be greater than BASE_VOCAB_SIZE ({BPEConfig.BASE_VOCAB_SIZE})"
+        assert self.config.vocab_size > BPEConfig.BASE_VOCAB_SIZE, msg
 
         # TODO: Is there a way to separate out the "Corpus to Pair Counts"
         # processing so that it can be done separately over a series of
@@ -132,7 +132,7 @@ class BPETokenizer:
 
             # Pick most frequent sequence
             next_sequence: ByteSequence = counts.most_common(1)[0][0]
-            new_id = self.BASE_VOCAB_SIZE + i
+            new_id = BPEConfig.BASE_VOCAB_SIZE + i
 
             token_ids = self._merge(token_ids, next_sequence, new_id)
             merge_rules.append((next_sequence, new_id))
@@ -143,7 +143,7 @@ class BPETokenizer:
                 )
 
         # Build vocabulary: base encoding + multi-byte phrases
-        vocab = {i: bytes([i]) for i in range(self.BASE_VOCAB_SIZE)}
+        vocab = {i: bytes([i]) for i in range(BPEConfig.BASE_VOCAB_SIZE)}
         for sequence_ids, new_id in merge_rules:
             byte_seq = [vocab[id] for id in sequence_ids]
             bytes_for_print = [f"{byte!r}" for byte in byte_seq]
