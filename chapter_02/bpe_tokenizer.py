@@ -192,10 +192,6 @@ def main(args):
     for token in special_tokens:
         print(f"Adding special token: {token}")
 
-    # TODO: remove this once special tokens are implemented
-    if len(special_tokens) > 0:
-        raise ValueError("Special tokens are not supported yet")
-
     DEFAULT_VOCAB_SIZE = 300
 
     # Pick a vocab size:
