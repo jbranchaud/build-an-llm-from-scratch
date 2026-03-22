@@ -69,7 +69,11 @@ class BPETokenizer:
         token_ids: TokenIds, sequence: ByteSequence, index: int
     ) -> bool:
         """Check if the sequence appears in token_ids starting at index"""
-        return token_ids[index : (index + len(sequence))] == sequence
+        for i in range(len(sequence)):
+            if sequence[i] != token_ids[index + i]:
+                return False
+
+        return True
 
     def train_bpe(self, text: str, vocab_size: int, special_tokens: list[str]) -> dict:
         """

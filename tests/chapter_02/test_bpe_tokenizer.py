@@ -12,7 +12,7 @@ def test_train_bpe():
     tokenizer = BPETokenizer()
 
     text = get_test_corpus()
-    extra_vocab_size = 1
+    extra_vocab_size = 3
     bpe = tokenizer.train_bpe(text, BPETokenizer.BASE_VOCAB_SIZE + extra_vocab_size, [])
 
     assert "merge_rules" in bpe
@@ -24,7 +24,9 @@ def test_train_bpe():
     vocab = bpe["vocab"]
 
     expected_merge_rules = [
-        { 'sequence': (32, 97), 'new_id': 256, 'vocab_entries': (b' ', b'a') }
+        { 'sequence': (32, 97), 'new_id': 256, 'vocab_entries': (b' ', b'a') },
+        { 'sequence': (105, 110) , 'new_id': 257, 'vocab_entries': (b'i', b'n') },
+        { 'sequence': (32, 119) , 'new_id': 258, 'vocab_entries': (b' ', b'w') }
     ]
 
     for i, merge_rule in enumerate(merge_rules):
@@ -44,14 +46,15 @@ def test_train_bpe_with_invalid_vocab_size():
 
     assert "target vocab size must be greater than" in str(exception.value)
 
+
 def test_merge_with_byte_pair():
-    merged_tokens = BPETokenizer._merge([1, 2, 3, 4, 5, 2, 3, 1], [2, 3], 256)
+    merged_tokens = BPETokenizer._merge([1, 2, 3, 4, 5, 2, 3, 1], (2, 3), 256)
     assert merged_tokens == [1, 256, 4, 5, 256, 1]
 
 
 def test_merge_with_byte_sequence():
     token_ids = [1, 2, 3, 4, 5, 2, 3, 1, 2, 3, 4, 1]
-    merged_tokens = BPETokenizer._merge(token_ids, [2, 3, 4], 256)
+    merged_tokens = BPETokenizer._merge(token_ids, (2, 3, 4), 256)
     assert merged_tokens == [1, 256, 5, 2, 3, 1, 256, 1]
 
 
