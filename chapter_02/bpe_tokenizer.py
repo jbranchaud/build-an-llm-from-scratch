@@ -11,7 +11,7 @@ MergeRules: TypeAlias = list[MergeRule]
 TokenIds = NewType("TokenIds", list[int])
 Vocab: TypeAlias = dict[int, bytes]
 
-@dataclass
+@dataclass(frozen=True)
 class BPEConfig:
     BASE_VOCAB_SIZE: ClassVar[int] = 256
 

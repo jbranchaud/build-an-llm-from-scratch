@@ -41,17 +41,6 @@ def test_bpe_config_with_invalid_vocab_size():
     assert "vocab_size (22) must be greater than" in str(exception.value)
 
 
-def test_train_bpe_with_invalid_vocab_size():
-    config = BPEConfig(300, [])
-    tokenizer = BPETokenizer(config)
-
-    config.vocab_size = 22
-
-    with pytest.raises(AssertionError) as exception:
-        tokenizer.train_bpe("This isn't gonna work.")
-
-    assert "vocab_size (22) must be greater than" in str(exception.value)
-
 def test_merge_with_byte_pair():
     merged_tokens = BPETokenizer._merge([1, 2, 3, 4, 5, 2, 3, 1], (2, 3), 256)
     assert merged_tokens == [1, 256, 4, 5, 256, 1]
