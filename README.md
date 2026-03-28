@@ -6,6 +6,12 @@ can be found [here](https://github.com/rasbt/LLMs-from-scratch).
 
 ## BPE (Byte Pair Encoding) Tokenizer
 
+Throughout the book we will be using
+[`tiktoken`](https://github.com/openai/tiktoken) as our BPE tokenizer. I was
+curious to learn more about this tokenization process and how I might (naively)
+implement my own. Even though I'll be moving forward with the much more robust
+set of tokens from `tiktoken`, I enjoyed building my own.
+
 An example of running this with various CLI parameters:
 
 ```bash
