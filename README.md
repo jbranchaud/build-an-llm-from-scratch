@@ -22,3 +22,20 @@ An example of running this with various CLI parameters:
     --output ./output.txt \
     --special-tokens '<|endoftext|>'
 ```
+
+## Jupyter Setup
+
+1. Install `ipython` kernel to be used by `jupyter`
+
+```bash
+❯ uv run ipython kernel install --user \
+    --env VIRTUAL_ENV "$(pwd)/.venv" \
+    --env PYTHONPATH "$(pwd)" \
+    --name=build-an-llm --display-name "Build an LLM"
+```
+
+2. Run `jupyter` notebook for cross-chapter project
+
+```bash
+❯ uv run --with jupyter jupyter lab
+```
